@@ -76,7 +76,6 @@ func ensureBridgeAddr(br *netlink.Bridge, ipn *net.IPNet) error {
 		}
 		return fmt.Errorf("%q already has an IP address different from %v", br.Name, ipn.String())
 	}
-
 	addr := &netlink.Addr{IPNet: ipn, Label: ""}
 	if err := netlink.AddrAdd(br, addr); err != nil {
 		return fmt.Errorf("could not add IP address to %q: %v", br.Name, err)

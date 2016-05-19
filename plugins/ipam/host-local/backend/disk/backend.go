@@ -19,9 +19,13 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"fmt"
 )
 
-var defaultDataDir = "/var/lib/cni/networks"
+const (
+	defaultDataDir = "/var/lib/cni/networks"
+	defaultLastReserveFile = "lastreserve"
+)
 
 type Store struct {
 	FileLock
@@ -60,6 +64,19 @@ func (s *Store) Reserve(id string, ip net.IP) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+func (s *Store) GetLastReservedIP() (ip net.IP, error){
+	fname := filepath.Join(s.dataDir, defaultLastReserveFile)
+	_, err := os.Stat(fname)
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	data, err := ioutil.ReadFile(fname)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read ipam checkpoint file: %v", err)
+	}
+	return net.ParseIP(string(data)), nil
 }
 
 func (s *Store) Release(ip net.IP) error {

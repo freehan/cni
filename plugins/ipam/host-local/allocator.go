@@ -112,7 +112,15 @@ func (a *IPAllocator) Get(id string) (*types.IPConfig, error) {
 		return nil, fmt.Errorf("requested IP address %q is not available in network: %s", requestedIP, a.conf.Name)
 	}
 
-	for cur := a.start; !cur.Equal(a.end); cur = ip.NextIP(cur) {
+	var start net.IP
+	lastIP, err := a.store.LastReserveIP()
+	if err != nil || lastIP == nil {
+		start = a.start
+		lastIP = a.end
+	}else {
+		start = a.nextIP(lastIP)
+	}
+	for cur := start; !cur.Equal(lastIP); cur = ip.NextIP(cur) {
 		// don't allocate gateway IP
 		if gw != nil && cur.Equal(gw) {
 			continue
@@ -130,6 +138,7 @@ func (a *IPAllocator) Get(id string) (*types.IPConfig, error) {
 			}, nil
 		}
 	}
+
 	return nil, fmt.Errorf("no IP addresses available in network: %s", a.conf.Name)
 }
 
@@ -162,4 +171,12 @@ func networkRange(ipnet *net.IPNet) (net.IP, net.IP, error) {
 		end = append(end, ip[i]|^ipnet.Mask[i])
 	}
 	return ipnet.IP, end, nil
+}
+
+func (a *IPAllocator) nextIP(curIP net.IP) net.IP {
+	nextIP := ip.NextIP(curIP)
+	if nextIP.Equal(a.end) {
+		nextIP = a.start
+	}
+	return nextIP
 }
