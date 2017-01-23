@@ -150,6 +150,11 @@ func ensureBridge(brName string, mtu int) (*netlink.Bridge, error) {
 		}
 	}
 
+	// Set bridge MTU explicitly to ensure bridge got updated
+	if err := netlink.LinkSetMTU(br, mtu); err != nil {
+		return nil, err
+	}
+
 	if err := netlink.LinkSetUp(br); err != nil {
 		return nil, err
 	}
